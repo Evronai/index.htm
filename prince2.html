@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PRINCE2® Exam Simulator 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f5f3ef; font-family: 'Inter', system-ui, sans-serif; color: #1a1a1a; min-height: 100vh; }
+    button { font-family: 'Inter', system-ui, sans-serif; cursor: pointer; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #e8e4dc; }
+    ::-webkit-scrollbar-thumb { background: #b8b0a0; border-radius: 3px; }
+    @keyframes tick { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+    @keyframes pulseRed { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0.5)} 50%{box-shadow:0 0 0 10px rgba(220,38,38,0)} }
+    @keyframes fadeSlide { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .fade-slide { animation: fadeSlide 0.22s ease forwards; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { useState, useEffect, useRef } = React;
+
+  // ─── Question Bank ───────────────────────────────────────────────────────────
+  const BASE_Q = [
+    // Principles
+    {id:1,  theme:"Principles", question:"How many principles underpin PRINCE2 7th Edition?", options:["5","6","7","8"], correct:2, explanation:"PRINCE2 7th Edition has 7 principles: Ensure ongoing viability, Learn from experience, Defined roles & responsibilities, Manage by stages, Manage by exception, Focus on products, Tailor to suit the project."},
+    {id:2,  theme:"Principles", question:"Which PRINCE2 principle ensures the project remains worthwhile throughout?", options:["Manage by exception","Focus on products","Ensure ongoing viability","Learn from experience"], correct:2, explanation:"'Ensure ongoing viability' means the project must have a justifiable reason to start and continue. The Business Case is reviewed at every stage boundary."},
+    {id:3,  theme:"Principles", question:"'Manage by exception' in PRINCE2 means:", options:["The PM manages all decisions personally","Tolerances are set and escalation occurs only when breached","All exceptions are logged in the risk register","The board manages day-to-day project activities"], correct:1, explanation:"Tolerances are set for time, cost, quality, scope, risk and benefits. If a forecast shows a tolerance will be exceeded, the issue escalates to the next management level."},
+    {id:4,  theme:"Principles", question:"Which principle requires lessons to be sought, recorded and acted upon?", options:["Focus on products","Tailor to suit the project","Learn from experience","Defined roles and responsibilities"], correct:2, explanation:"'Learn from experience' requires teams to seek lessons at the start, during, and at the end of the project, and actively apply them going forward."},
+    {id:5,  theme:"Principles", question:"'Focus on products' means PRINCE2 projects are:", options:["Activity-led","Output-led","Budget-led","Resource-led"], correct:1, explanation:"PRINCE2 is output-led — products are defined before activities are planned. Product Descriptions drive all planning and quality activities."},
+    {id:6,  theme:"Principles", question:"Which principle divides the project into manageable, sequential sections?", options:["Manage by exception","Tailor to suit the project","Manage by stages","Focus on products"], correct:2, explanation:"'Manage by stages' divides the project into sequential management stages. Each stage has its own plan and must be authorized by the board before starting."},
+    {id:7,  theme:"Principles", question:"'Tailor to suit the project' means:", options:["PRINCE2 can be ignored for small projects","The method is adapted to the project's size, environment and complexity","Only selected themes are applied","The PM decides which principles to follow"], correct:1, explanation:"All 7 principles always apply, but PRINCE2 must be tailored — the level of formality and documentation should match the project context."},
+    // Practices
+    {id:8,  theme:"Practices", question:"What document is at the heart of the Business Case practice?", options:["Project Brief","Project Initiation Document","Business Case","Benefits Management Approach"], correct:2, explanation:"The Business Case is the central document justifying ongoing viability. It is developed in SU, refined in IP, maintained throughout, and confirmed at closure."},
+    {id:9,  theme:"Practices", question:"Which practice addresses how the project will be controlled and reported on?", options:["Business Case","Progress","Risk","Quality"], correct:1, explanation:"The Progress practice covers performance monitoring, tolerance management, reporting mechanisms, and escalation procedures."},
+    {id:10, theme:"Practices", question:"In the Risk practice, risks are assessed using:", options:["Probability and impact","Threat and opportunity categorisation only","Expected monetary value only","Risk appetite statements"], correct:0, explanation:"Risks are assessed by estimating probability (likelihood of occurring) and impact (effect on project objectives) to produce an overall risk evaluation."},
+    {id:11, theme:"Practices", question:"A Product Description contains all of the following EXCEPT:", options:["Quality criteria","Composition","Cost of the product","Purpose"], correct:2, explanation:"Product Descriptions contain purpose, composition, derivation, format, quality criteria and quality method — cost is captured in the plan, not the Product Description."},
+    {id:12, theme:"Practices", question:"Which document describes how quality will be managed across the whole project?", options:["Quality Register","Quality Management Approach","Product Description","Project Initiation Document"], correct:1, explanation:"The Quality Management Approach defines the quality standards, responsibilities, techniques and controls applicable to the project."},
+    {id:13, theme:"Practices", question:"The Issues practice deals with which three types of issue?", options:["Risks, quality failures and complaints","Requests for change, off-specifications and general issues","Off-specifications, risks and stakeholder concerns","General issues, risks and changes"], correct:1, explanation:"PRINCE2 categories issues as: requests for change (RFC), off-specifications (products not meeting their description), and general issues/concerns."},
+    {id:14, theme:"Practices", question:"What is the primary purpose of the Plans practice?", options:["To track time and cost only","To facilitate communication and control by defining how and when products will be delivered","To create a detailed Gantt chart","To allocate resources to activities"], correct:1, explanation:"Plans provide the basis for communication and control — defining what will be delivered, when, by whom, at what cost, and to what quality."},
+    {id:15, theme:"Practices", question:"Which practice was introduced in PRINCE2 7th Edition, replacing 'Organisation'?", options:["People","Governance","Stakeholder Engagement","Leadership"], correct:0, explanation:"The 'People' practice is new in PRINCE2 7. It replaces the 6th Edition 'Organisation' theme with a broader focus on people skills, culture and engagement."},
+    {id:16, theme:"Practices", question:"The Benefits Management Approach is first created during:", options:["Starting Up a Project","Initiating a Project","Managing a Stage Boundary","Closing a Project"], correct:1, explanation:"The Benefits Management Approach is created during Initiating a Project. It defines how and when benefits will be measured and reviewed post-project."},
+    {id:17, theme:"Practices", question:"In PRINCE2 7, how many tolerance areas are there?", options:["4","5","6","7"], correct:2, explanation:"PRINCE2 defines 6 tolerance areas: time, cost, quality, scope, risk, and benefits. Tolerances can be set at project, stage and team levels."},
+    // Processes
+    {id:18, theme:"Processes", question:"Which process produces the Project Brief?", options:["Initiating a Project","Starting Up a Project","Directing a Project","Managing a Stage Boundary"], correct:1, explanation:"Starting Up a Project (SU) produces the Project Brief, which provides enough information for the board to decide whether to authorize the Initiation Stage."},
+    {id:19, theme:"Processes", question:"The Project Initiation Document (PID) is produced during:", options:["Starting Up a Project","Directing a Project","Initiating a Project","Controlling a Stage"], correct:2, explanation:"The PID is the key output of Initiating a Project (IP). It defines objectives, approach, controls, tolerances and all management strategies for the project."},
+    {id:20, theme:"Processes", question:"Which PRINCE2 process is carried out by the Project Board throughout the project?", options:["Controlling a Stage","Managing Product Delivery","Directing a Project","Managing a Stage Boundary"], correct:2, explanation:"Directing a Project (DP) is the Project Board's process — authorizing stages, providing direction, and making key decisions via management by exception."},
+    {id:21, theme:"Processes", question:"'Controlling a Stage' is primarily the responsibility of:", options:["The Project Board","The Project Manager","Team Managers","The Executive"], correct:1, explanation:"Controlling a Stage (CS) is performed by the Project Manager — covering day-to-day management, authorizing Work Packages and managing issues within tolerance."},
+    {id:22, theme:"Processes", question:"Which process governs the interface between the Project Manager and Team Managers?", options:["Controlling a Stage","Directing a Project","Managing Product Delivery","Managing a Stage Boundary"], correct:2, explanation:"Managing Product Delivery (MPD) manages the relationship between PM and Team Managers — work is authorized via Work Packages and accepted on completion."},
+    {id:23, theme:"Processes", question:"Managing a Stage Boundary is performed:", options:["At the end of every management stage","Only at the very final stage","Whenever a new risk is identified","At the very start of the project"], correct:0, explanation:"Managing a Stage Boundary (SB) is performed near the end of each management stage to update plans and reports, and seek board authorization for the next stage."},
+    {id:24, theme:"Processes", question:"Which process produces the End Project Report?", options:["Managing a Stage Boundary","Closing a Project","Directing a Project","Controlling a Stage"], correct:1, explanation:"Closing a Project (CP) produces the End Project Report, Lessons Report, and Follow-on Action Recommendations before the board authorizes project closure."},
+    {id:25, theme:"Processes", question:"An Exception Plan is created when:", options:["A stage is completed on time","A tolerance is forecast to be exceeded","A new risk is identified and logged","A team manager requests additional resources"], correct:1, explanation:"When a Stage Plan or Project Plan is forecast to breach its tolerances, the PM raises an Exception Report and may be asked to create an Exception Plan."},
+    {id:26, theme:"Processes", question:"What triggers Starting Up a Project?", options:["The Project Brief","A project mandate from corporate or programme management","The Project Initiation Document","The Business Case"], correct:1, explanation:"Starting Up a Project is triggered by a project mandate — a request or instruction from corporate/programme management to investigate starting a project."},
+    // Roles
+    {id:27, theme:"Roles", question:"Who chairs the Project Board in PRINCE2?", options:["Project Manager","Senior User","Executive","Senior Supplier"], correct:2, explanation:"The Executive chairs the Project Board and is ultimately accountable for the project. They own the Business Case and represent the business/commissioning body interests."},
+    {id:28, theme:"Roles", question:"The Senior User role is accountable for:", options:["Providing supplier resources","Specifying the need and ensuring benefits are realized","Chairing the Project Board","Day-to-day project management"], correct:1, explanation:"The Senior User represents those who will use the project outputs — they specify requirements, ensure fitness for purpose, and are accountable for benefit realization."},
+    {id:29, theme:"Roles", question:"The Project Manager is responsible for:", options:["Authorizing each management stage","Day-to-day project management on behalf of the Project Board","Managing individual team members personally","Writing and owning the Business Case"], correct:1, explanation:"The PM manages the project day-to-day within the constraints (tolerances and direction) agreed with the Project Board."},
+    {id:30, theme:"Roles", question:"The Change Authority is responsible for:", options:["Approving the overall project","Approving or rejecting requests for change within delegated limits","Maintaining the Issue Register","Creating Product Descriptions"], correct:1, explanation:"The Change Authority is delegated authority by the Project Board to approve or reject RFCs within defined financial or other limits, reducing board workload."},
+    {id:31, theme:"Roles", question:"Team Managers are accountable to the Project Manager for:", options:["Authorizing stage budgets","Delivering the agreed Work Package products to specification","Approving the Project Brief","Chairing team-level risk reviews"], correct:1, explanation:"Team Managers are responsible for the day-to-day management of teams and are accountable to the PM for delivering work packages to agreed quality, time and cost."},
+    {id:32, theme:"Roles", question:"Project Assurance in PRINCE2 is the responsibility of:", options:["The Project Manager","Project Support","Each Project Board member for their own area of interest","The PMO only"], correct:2, explanation:"Project Assurance is the board's responsibility — each member assures their area: Executive (business), Senior User (user requirements), Senior Supplier (technical/supplier)."},
+    {id:33, theme:"Roles", question:"Project Support provides:", options:["Independent assurance to the Project Board","Administrative and specialist support to the Project Manager","Strategic direction for the project","Quality inspections of project products"], correct:1, explanation:"Project Support provides administrative assistance to the PM — maintaining project files, running tools, providing PRINCE2 expertise, and managing the configuration."},
+    // Documents
+    {id:34, theme:"Documents", question:"The Work Package is issued by:", options:["Project Board to the Project Manager","Project Manager to Team Managers","Team Manager to individual team members","Executive to the Project Manager"], correct:1, explanation:"The Project Manager issues Work Packages to Team Managers (or directly to team members) to formally authorize and define work to be carried out."},
+    {id:35, theme:"Documents", question:"Which report is produced at the end of each management stage?", options:["Highlight Report","Checkpoint Report","End Stage Report","Exception Report"], correct:2, explanation:"The End Stage Report is produced by the PM at the end of each stage. It summarizes performance and is used by the board in their authorization decision."},
+    {id:36, theme:"Documents", question:"Highlight Reports are submitted to the Project Board:", options:["Daily during a stage","Only at stage end","At regular intervals during a stage as defined in the Communication Management Approach","Only when issues or risks arise"], correct:2, explanation:"Highlight Reports are time-driven progress reports sent by the PM to the board at a frequency agreed in the Communication Management Approach."},
+    {id:37, theme:"Documents", question:"A Checkpoint Report is produced by:", options:["The Project Manager for the board","Team Managers for the Project Manager","The Executive for the programme","Project Assurance for the board"], correct:1, explanation:"Team Managers (or team members if no Team Manager) produce Checkpoint Reports for the PM at intervals defined in the Work Package, covering team-level progress."},
+    {id:38, theme:"Documents", question:"The Lessons Report is PRIMARILY produced during:", options:["Starting Up a Project","Initiating a Project","Closing a Project (and optionally at stage boundaries)","Directing a Project"], correct:2, explanation:"The Lessons Report must be produced during Closing a Project. It can also be produced at stage boundaries to share learning earlier in the project."},
+    {id:39, theme:"Documents", question:"Which register records all identified risks on the project?", options:["Issue Register","Daily Log","Risk Register","Lessons Log"], correct:2, explanation:"The Risk Register records all identified threats and opportunities — their description, probability, impact, owner, response actions and current status."},
+    {id:40, theme:"Documents", question:"The Daily Log is used by the Project Manager to:", options:["Record formal issues and risks","Track informal issues, actions and personal notes during a stage","Report progress to the Project Board","Record quality inspection results"], correct:1, explanation:"The Daily Log is the PM's informal diary — used to track minor issues, to-dos and personal notes that don't warrant a formal entry in other registers."},
+  ];
+
+  const QUESTIONS = [...BASE_Q];
+  while (QUESTIONS.length < 120) {
+    const src = BASE_Q[QUESTIONS.length % BASE_Q.length];
+    QUESTIONS.push({...src, id: QUESTIONS.length+1, question: `[Practice] ${src.question}`});
+  }
+
+  const TC  = {Principles:"#1e3a8a", Practices:"#0369a1", Processes:"#15803d", Roles:"#92400e", Documents:"#6b21a8"};
+  const TBG = {Principles:"#dbeafe", Practices:"#e0f2fe", Processes:"#dcfce7", Roles:"#fef3c7",  Documents:"#f3e8ff"};
+  const TTX = {Principles:"#1e40af", Practices:"#0c4a6e", Processes:"#166534", Roles:"#78350f",  Documents:"#581c87"};
+  const TW  = {Principles:20, Practices:25, Processes:30, Roles:15, Documents:10};
+
+  const STUDY = {
+    Principles:[
+      {t:"7 Principles",        b:"1. Ensure ongoing viability | 2. Learn from experience | 3. Defined roles & responsibilities | 4. Manage by stages | 5. Manage by exception | 6. Focus on products | 7. Tailor to suit the project"},
+      {t:"Ensure Ongoing Viability", b:"The project must have a justifiable reason to start and continue at every stage. The Business Case is the vehicle — reviewed at each stage boundary. No viable Business Case = stop the project."},
+      {t:"Manage by Exception",  b:"Tolerances are set for all 6 objectives: time, cost, quality, scope, risk and benefits. Day-to-day control is delegated. Only breached tolerances trigger escalation — reducing unnecessary management overhead."},
+      {t:"Focus on Products",    b:"PRINCE2 is product (output) led, not activity led. Products are defined in Product Descriptions before activities are planned. This ensures clarity on what 'done' looks like before work starts."},
+    ],
+    Practices:[
+      {t:"7 Practices (formerly Themes)", b:"Business Case | People (new v7) | Quality | Plans | Risk | Issues | Progress. Practices replace Themes from 6th Edition and include more guidance on application."},
+      {t:"Business Case Practice", b:"Justifies the investment. Developed in SU as a draft, refined in IP, updated at each stage boundary, and formally reviewed at project closure. Owned by the Executive."},
+      {t:"Risk Practice",        b:"Threat responses: Avoid, Reduce, Fallback, Transfer, Accept, Share. Opportunity responses: Exploit, Enhance, Share, Reject. Risks are owned by individuals and reviewed regularly."},
+      {t:"Quality Practice",     b:"Defines fitness for purpose. Key outputs: Quality Management Approach, Quality Register, Product Descriptions (with quality criteria). Customer quality expectations drive all quality planning."},
+    ],
+    Processes:[
+      {t:"7 Processes Overview", b:"Starting Up (SU) → Initiating a Project (IP) → Directing a Project (DP, throughout) → Controlling a Stage (CS) → Managing Product Delivery (MPD) → Managing a Stage Boundary (SB) → Closing a Project (CP)"},
+      {t:"Starting Up a Project", b:"Pre-project process. Triggered by a project mandate. Produces: Project Brief, Lessons Log (from previous projects), Initiation Stage Plan. The key question: is this worth initiating?"},
+      {t:"Initiating a Project",  b:"Creates the firm foundation. Produces the PID (the 'contract' between PM and board), containing all management approaches, controls and tolerances. Board authorizes before delivery starts."},
+      {t:"Stage Boundary & Closing", b:"SB: update plans and reports, seek board authorization for next stage. CP: produce End Project Report, Lessons Report, Follow-on Actions, confirm acceptance of products, release resources."},
+    ],
+    Roles:[
+      {t:"Project Board",        b:"Executive (chairs, owns Business Case, represents business) | Senior User (specifies need, ensures benefit realization) | Senior Supplier (provides/commits resources, ensures technical integrity)."},
+      {t:"Project Manager",      b:"Manages day-to-day within board-set constraints. Plans stages, controls work packages, manages issues/risks, produces reports. Single PM per project — accountable to the Project Board."},
+      {t:"Team Manager & Support", b:"Team Manager: accountable for delivering Work Packages to specification. Project Support: admin/tools/configuration. Project Assurance: independent checking on behalf of each board member."},
+      {t:"Change Authority",     b:"Optional role delegated by board to handle requests for change within defined limits. Reduces board overhead. Decisions recorded in the Issue Register. Can be the PM or a separate person."},
+    ],
+    Documents:[
+      {t:"Key Document Flow",    b:"Mandate → Project Brief → PID → Stage Plans → Work Packages → Checkpoint Reports → Highlight Reports → End Stage Reports → End Project Report → Lessons Report"},
+      {t:"Project Initiation Document", b:"The 'why, what, how, when, who and how much' of the project. Contains the Business Case, all management approaches, project controls, risk budget, change budget and tolerances."},
+      {t:"Work Package",         b:"Formal agreement between PM and Team Manager. Defines: products to create, constraints, interfaces, quality requirements, reporting frequency, and how/when handover will happen."},
+      {t:"Registers & Logs",     b:"Risk Register (threats/opportunities) | Issue Register (RFCs, off-specs, general issues) | Quality Register (planned and actual quality events) | Lessons Log | Daily Log (informal PM notes)"},
+    ],
+  };
+
+  function shuffle(arr) {
+    const a=[...arr];
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    return a;
+  }
+  function fmt(s){
+    const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  // ── Clock ──────────────────────────────────────────────────────────────────
+  function Clock({seconds,total}){
+    const pct=seconds/total;
+    const isRed=pct<0.15,isAmber=pct<0.33;
+    const bg=isRed?"#dc2626":isAmber?"#d97706":"#15803d";
+    const light=isRed?"#fee2e2":isAmber?"#fef3c7":"#f0fdf4";
+    const bdr=isRed?"#fca5a5":isAmber?"#fde68a":"#86efac";
+    return(
+      <div style={{display:"flex",alignItems:"center",gap:10,background:light,border:`2px solid ${bdr}`,borderRadius:10,padding:"8px 18px",animation:isRed?"pulseRed 1s infinite":"none"}}>
+        <span style={{fontSize:20}}>{isRed?"⚠️":isAmber?"⏰":"🕐"}</span>
+        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:24,fontWeight:600,color:bg,letterSpacing:2,animation:isRed?"tick 1s infinite":"none"}}>{fmt(seconds)}</span>
+        <span style={{fontSize:11,color:bg,fontWeight:700,opacity:0.8}}>{isRed?"URGENT":isAmber?"LOW TIME":"REMAINING"}</span>
+      </div>
+    );
+  }
+
+  // ── Tag ────────────────────────────────────────────────────────────────────
+  function Tag({theme}){
+    return <span style={{background:TBG[theme],color:TTX[theme],borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:700,flexShrink:0}}>{theme}</span>;
+  }
+
+  // ── Nav ────────────────────────────────────────────────────────────────────
+  function Nav({screen,setScreen}){
+    if(screen==="exam") return null;
+    return(
+      <nav style={{background:"#fff",borderBottom:"1px solid #e2ddd6",padding:"0 20px",position:"sticky",top:0,zIndex:50,boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
+        <div style={{maxWidth:860,margin:"0 auto",display:"flex",alignItems:"center",height:50,gap:4}}>
+          <span style={{fontFamily:"'Source Serif 4',serif",color:"#1e3a8a",fontWeight:700,fontSize:16,marginRight:16,cursor:"pointer"}} onClick={()=>setScreen("home")}>PRINCE2®</span>
+          {[["home","Home"],["study","Study"],["review","Review"]].map(([s,label])=>(
+            <button key={s} onClick={()=>setScreen(s)} style={{background:screen===s?"#eff3ff":"transparent",border:screen===s?"1px solid #bfdbfe":"1px solid transparent",borderRadius:7,padding:"6px 14px",color:screen===s?"#1e3a8a":"#6b7280",fontSize:13,fontWeight:600,transition:"all 0.15s"}}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </nav>
+    );
+  }
+
+  // ── Home ───────────────────────────────────────────────────────────────────
+  function Home({onStart,onStudy,onReview,lastResult}){
+    return(
+      <div style={{maxWidth:660,margin:"0 auto",padding:"52px 20px"}}>
+        <div style={{background:"#fff",borderRadius:16,border:"1px solid #e2ddd6",padding:"38px 42px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:26,flexWrap:"wrap",gap:14}}>
+            <div>
+              <p style={{fontSize:11,fontWeight:700,letterSpacing:2,color:"#9ca3af",textTransform:"uppercase",marginBottom:8}}>Axelos Certification Prep</p>
+              <h1 style={{fontFamily:"'Source Serif 4',serif",fontSize:"clamp(1.9rem,4vw,2.7rem)",fontWeight:700,color:"#111827",lineHeight:1.15}}>
+                PRINCE2®<br/>Exam Simulator
+              </h1>
+              <p style={{color:"#6b7280",fontSize:14,marginTop:8}}>7th Edition (2023) · Foundation Level</p>
+            </div>
+            <div style={{background:"#1e3a8a",color:"white",borderRadius:12,padding:"14px 22px",textAlign:"center"}}>
+              <div style={{fontSize:32,fontWeight:700,lineHeight:1}}>120</div>
+              <div style={{fontSize:11,marginTop:4,opacity:0.75}}>Questions</div>
+            </div>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:26,paddingBottom:26,borderBottom:"1px solid #f0ece4"}}>
+            {[["⏱","150 Min","Time Limit"],["📋","120 Scored","Foundation"],["✅","55%","Passing Score"]].map(([icon,val,lbl])=>(
+              <div key={lbl} style={{textAlign:"center",padding:"14px 8px",background:"#fafaf8",borderRadius:10,border:"1px solid #ece8e0"}}>
+                <div style={{fontSize:20,marginBottom:5}}>{icon}</div>
+                <div style={{fontWeight:700,fontSize:15,color:"#111827"}}>{val}</div>
+                <div style={{fontSize:11,color:"#9ca3af",marginTop:3}}>{lbl}</div>
+              </div>
+            ))}
+          </div>
+
+          <p style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:"#9ca3af",textTransform:"uppercase",marginBottom:12}}>Theme Breakdown</p>
+          {Object.entries(TW).map(([t,w])=>(
+            <div key={t} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+              <Tag theme={t}/>
+              <div style={{flex:1,height:8,background:"#f0ece4",borderRadius:4,overflow:"hidden"}}>
+                <div style={{width:`${w}%`,height:"100%",background:TC[t],borderRadius:4}}/>
+              </div>
+              <span style={{fontWeight:700,fontSize:13,color:"#374151",minWidth:30,textAlign:"right"}}>{w}%</span>
+            </div>
+          ))}
+
+          <div style={{display:"grid",gap:10,marginTop:26}}>
+            <button onClick={onStart} style={{background:"#1e3a8a",color:"white",border:"none",borderRadius:10,padding:"16px 24px",fontSize:16,fontWeight:700,letterSpacing:0.3,transition:"background 0.15s"}}
+              onMouseOver={e=>e.currentTarget.style.background="#1e40af"}
+              onMouseOut={e=>e.currentTarget.style.background="#1e3a8a"}>
+              Begin Examination →
+            </button>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {[["📚 Study Notes",onStudy],["📖 Question Bank",onReview]].map(([lbl,fn])=>(
+                <button key={lbl} onClick={fn} style={{background:"#f9f7f4",border:"1px solid #e2ddd6",borderRadius:10,padding:"13px",color:"#374151",fontSize:14,fontWeight:600,transition:"background 0.15s"}}
+                  onMouseOver={e=>e.currentTarget.style.background="#ece8e0"}
+                  onMouseOut={e=>e.currentTarget.style.background="#f9f7f4"}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {lastResult&&(
+          <div style={{background:"#fff",borderRadius:12,border:"1px solid #e2ddd6",padding:"16px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
+            <div>
+              <p style={{fontSize:11,color:"#9ca3af",fontWeight:600,textTransform:"uppercase",letterSpacing:1,margin:"0 0 3px"}}>Last Attempt</p>
+              <p style={{fontSize:20,fontWeight:700,color:"#111827",margin:0}}>{lastResult.pct.toFixed(1)}% <span style={{fontSize:14,fontWeight:400,color:"#6b7280"}}>({lastResult.correct}/{lastResult.total})</span></p>
+            </div>
+            <span style={{padding:"6px 16px",borderRadius:20,fontWeight:700,fontSize:13,background:lastResult.passed?"#dcfce7":"#fee2e2",color:lastResult.passed?"#15803d":"#dc2626"}}>
+              {lastResult.passed?"✓ PASS":"✗ FAIL"}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Study ──────────────────────────────────────────────────────────────────
+  function Study(){
+    const [topic,setTopic]=useState("Principles");
+    return(
+      <div style={{maxWidth:720,margin:"0 auto",padding:"32px 20px"}}>
+        <h2 style={{fontFamily:"'Source Serif 4',serif",color:"#111827",fontSize:26,marginBottom:20}}>Study Notes</h2>
+        <div style={{display:"flex",gap:8,marginBottom:22,flexWrap:"wrap"}}>
+          {Object.keys(STUDY).map(t=>(
+            <button key={t} onClick={()=>setTopic(t)} style={{background:topic===t?TC[t]:"#fff",border:`1.5px solid ${topic===t?TC[t]:"#e2ddd6"}`,borderRadius:8,padding:"8px 16px",color:topic===t?"white":"#374151",fontSize:13,fontWeight:600,transition:"all 0.15s"}}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"grid",gap:12}}>
+          {STUDY[topic].map((s,i)=>(
+            <div key={i} style={{background:"#fff",border:"1px solid #e2ddd6",borderLeft:`4px solid ${TC[topic]}`,borderRadius:"0 12px 12px 0",padding:"18px 22px",boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
+              <h4 style={{color:TC[topic],margin:"0 0 8px",fontSize:14,fontWeight:700}}>{s.t}</h4>
+              <p style={{color:"#4b5563",margin:0,fontSize:14,lineHeight:1.8}}>{s.b}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Review ─────────────────────────────────────────────────────────────────
+  function Review(){
+    const [filter,setFilter]=useState("All");
+    const [open,setOpen]=useState(null);
+    const filtered=filter==="All"?BASE_Q:BASE_Q.filter(q=>q.theme===filter);
+    return(
+      <div style={{maxWidth:720,margin:"0 auto",padding:"32px 20px"}}>
+        <h2 style={{fontFamily:"'Source Serif 4',serif",color:"#111827",fontSize:26,marginBottom:20}}>Question Bank</h2>
+        <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+          {["All",...Object.keys(TW)].map(d=>(
+            <button key={d} onClick={()=>setFilter(d)} style={{background:filter===d?(d==="All"?"#1e3a8a":TC[d]):"#fff",border:`1.5px solid ${filter===d?(d==="All"?"#1e3a8a":TC[d]):"#e2ddd6"}`,borderRadius:8,padding:"7px 14px",color:filter===d?"white":"#374151",fontSize:12,fontWeight:600}}>
+              {d}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"grid",gap:8}}>
+          {filtered.map(q=>(
+            <div key={q.id} style={{background:"#fff",border:"1px solid #e2ddd6",borderRadius:10,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+              <button onClick={()=>setOpen(open===q.id?null:q.id)} style={{width:"100%",background:"none",border:"none",padding:"14px 18px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                <Tag theme={q.theme}/>
+                <span style={{color:"#374151",fontSize:13,flex:1}}>{q.question}</span>
+                <span style={{color:"#9ca3af",fontSize:15,flexShrink:0}}>{open===q.id?"−":"+"}</span>
+              </button>
+              {open===q.id&&(
+                <div style={{padding:"0 18px 16px",borderTop:"1px solid #f0ece4"}}>
+                  {q.options.map((opt,j)=>(
+                    <div key={j} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:8,marginTop:7,background:j===q.correct?"#f0fdf4":"#fafaf8",border:`1px solid ${j===q.correct?"#86efac":"#e8e4dc"}`}}>
+                      <span style={{fontWeight:700,fontSize:12,color:j===q.correct?"#15803d":"#9ca3af",minWidth:18}}>{String.fromCharCode(65+j)}</span>
+                      <span style={{color:j===q.correct?"#166534":"#6b7280",fontSize:13}}>{opt}</span>
+                      {j===q.correct&&<span style={{marginLeft:"auto",color:"#15803d",fontSize:11,fontWeight:700}}>✓ CORRECT</span>}
+                    </div>
+                  ))}
+                  <div style={{marginTop:12,padding:"10px 14px",background:"#fffbeb",borderRadius:8,border:"1px solid #fde68a",borderLeft:"3px solid #d97706"}}>
+                    <p style={{color:"#92400e",fontSize:13,margin:0}}>💡 {q.explanation}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Exam ───────────────────────────────────────────────────────────────────
+  function Exam({onFinish}){
+    const [questions]=useState(()=>shuffle(QUESTIONS));
+    const [current,setCurrent]=useState(0);
+    const [answers,setAnswers]=useState({});
+    const [selected,setSelected]=useState(null);
+    const [flagged,setFlagged]=useState(new Set());
+    const [showNav,setShowNav]=useState(false);
+    const [timeLeft,setTimeLeft]=useState(150*60);
+    const timerRef=useRef(null);
+    const TOTAL=150*60;
+
+    useEffect(()=>{
+      timerRef.current=setInterval(()=>{
+        setTimeLeft(s=>{
+          if(s<=1){clearInterval(timerRef.current);submit({});return 0;}
+          return s-1;
+        });
+      },1000);
+      return ()=>clearInterval(timerRef.current);
+    },[]);
+
+    function submit(extra={}){
+      clearInterval(timerRef.current);
+      const final={...answers,...extra};
+      if(selected!==null) final[current]=selected;
+      const correct=questions.reduce((acc,q,i)=>acc+(final[i]===q.correct?1:0),0);
+      onFinish({correct,total:questions.length,answers:final,questions});
+    }
+
+    function go(idx){
+      const upd={...answers};
+      if(selected!==null) upd[current]=selected;
+      setAnswers(upd);
+      setSelected(upd[idx]!==undefined?upd[idx]:null);
+      setCurrent(idx);
+      setShowNav(false);
+    }
+
+    const q=questions[current];
+    const answered=Object.keys(answers).length+(selected!==null&&answers[current]===undefined?1:0);
+
+    return(
+      <div style={{minHeight:"100vh",background:"#f5f3ef"}}>
+        {/* Header */}
+        <div style={{background:"#1e3a8a",padding:"0 20px",position:"sticky",top:0,zIndex:50}}>
+          <div style={{maxWidth:860,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:60,gap:16,flexWrap:"wrap"}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <span style={{fontFamily:"'Source Serif 4',serif",color:"white",fontWeight:700,fontSize:16}}>PRINCE2® Exam</span>
+              <span style={{background:"rgba(255,255,255,0.18)",color:"white",borderRadius:6,padding:"3px 10px",fontSize:12,fontWeight:600}}>{current+1} / 120</span>
+              <span style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{answered} answered</span>
+            </div>
+            <Clock seconds={timeLeft} total={TOTAL}/>
+          </div>
+          <div style={{height:3,background:"rgba(255,255,255,0.15)"}}>
+            <div style={{height:"100%",width:`${((current)/120)*100}%`,background:"#93c5fd",transition:"width 0.3s ease"}}/>
+          </div>
+        </div>
+
+        <div style={{maxWidth:820,margin:"0 auto",padding:"28px 20px 100px"}}>
+          <div style={{display:"flex",gap:10,marginBottom:18,alignItems:"center",flexWrap:"wrap"}}>
+            <Tag theme={q.theme}/>
+            <span style={{color:"#9ca3af",fontSize:12}}>Question {current+1} of 120</span>
+            {flagged.has(current)&&<span style={{background:"#fef3c7",color:"#92400e",border:"1px solid #fde68a",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:700}}>🚩 Flagged</span>}
+            <span style={{marginLeft:"auto",color:"#9ca3af",fontSize:12}}>{answered} answered</span>
+          </div>
+
+          <div className="fade-slide" key={current} style={{background:"#fff",border:"1px solid #e2ddd6",borderRadius:14,padding:"26px 30px",marginBottom:18,boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+            <p style={{fontFamily:"'Source Serif 4',serif",color:"#111827",fontSize:18,lineHeight:1.8,margin:0}}>{q.question}</p>
+          </div>
+
+          <div style={{display:"grid",gap:10,marginBottom:22}}>
+            {q.options.map((opt,i)=>{
+              const isSel=selected===i;
+              return(
+                <button key={i} onClick={()=>setSelected(i)} style={{
+                  width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:14,
+                  padding:"14px 18px",borderRadius:10,border:`2px solid ${isSel?"#1e3a8a":"#e2ddd6"}`,
+                  background:isSel?"#eff3ff":"#fff",cursor:"pointer",
+                  transition:"all 0.15s",boxShadow:isSel?"0 0 0 3px rgba(30,58,138,0.08)":"none"}}
+                  onMouseOver={e=>{if(!isSel){e.currentTarget.style.borderColor="#93c5fd";e.currentTarget.style.background="#f8faff";}}}
+                  onMouseOut={e=>{if(!isSel){e.currentTarget.style.borderColor="#e2ddd6";e.currentTarget.style.background="#fff";}}}>
+                  <span style={{width:30,height:30,borderRadius:7,border:`2px solid ${isSel?"#1e3a8a":"#d1cec8"}`,background:isSel?"#1e3a8a":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,color:isSel?"white":"#9ca3af",flexShrink:0,transition:"all 0.15s"}}>
+                    {String.fromCharCode(65+i)}
+                  </span>
+                  <span style={{color:isSel?"#1e3a8a":"#374151",fontSize:14,lineHeight:1.6,fontWeight:isSel?600:400}}>{opt}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+            <button onClick={()=>setFlagged(s=>{const n=new Set(s);n.has(current)?n.delete(current):n.add(current);return n;})}
+              style={{background:flagged.has(current)?"#fef3c7":"#f9f7f4",border:`1.5px solid ${flagged.has(current)?"#fbbf24":"#e2ddd6"}`,borderRadius:8,padding:"9px 16px",color:flagged.has(current)?"#92400e":"#6b7280",fontSize:13,fontWeight:600}}>
+              🚩 {flagged.has(current)?"Unflag":"Flag for Review"}
+            </button>
+            <button onClick={()=>setShowNav(s=>!s)} style={{background:"#f9f7f4",border:"1.5px solid #e2ddd6",borderRadius:8,padding:"9px 16px",color:"#6b7280",fontSize:13,fontWeight:600}}>
+              ⊞ Navigator
+            </button>
+            <div style={{flex:1}}/>
+            {current>0&&<button onClick={()=>go(current-1)} style={{background:"#f9f7f4",border:"1.5px solid #e2ddd6",borderRadius:8,padding:"9px 20px",color:"#374151",fontSize:14,fontWeight:600}}>← Previous</button>}
+            {current<119
+              ?<button onClick={()=>go(current+1)} style={{background:"#1e3a8a",border:"none",borderRadius:8,padding:"9px 24px",color:"white",fontSize:14,fontWeight:700,transition:"background 0.15s"}}
+                onMouseOver={e=>e.currentTarget.style.background="#1e40af"}
+                onMouseOut={e=>e.currentTarget.style.background="#1e3a8a"}>Next Question →</button>
+              :<button onClick={()=>submit()} style={{background:"#15803d",border:"none",borderRadius:8,padding:"9px 24px",color:"white",fontSize:14,fontWeight:700,transition:"background 0.15s"}}
+                onMouseOver={e=>e.currentTarget.style.background="#166534"}
+                onMouseOut={e=>e.currentTarget.style.background="#15803d"}>✓ Submit Exam</button>
+            }
+          </div>
+
+          {showNav&&(
+            <div style={{marginTop:20,background:"#fff",border:"1px solid #e2ddd6",borderRadius:14,padding:"20px 22px",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+              <p style={{color:"#9ca3af",fontSize:11,margin:"0 0 14px",textTransform:"uppercase",letterSpacing:1.5,fontWeight:700}}>Question Navigator</p>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:14}}>
+                {questions.map((_,i)=>{
+                  const isDone=answers[i]!==undefined||(i===current&&selected!==null);
+                  const isCur=i===current,isFlag=flagged.has(i);
+                  return(
+                    <button key={i} onClick={()=>go(i)} style={{width:33,height:33,borderRadius:7,fontSize:10,fontWeight:700,
+                      background:isCur?"#1e3a8a":isDone?"#dcfce7":"#fafaf8",
+                      border:`1.5px solid ${isCur?"#1e3a8a":isFlag?"#fbbf24":isDone?"#86efac":"#e2ddd6"}`,
+                      color:isCur?"white":isDone?"#15803d":"#9ca3af"}}>
+                      {i+1}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{display:"flex",gap:16,fontSize:11,flexWrap:"wrap"}}>
+                <span style={{color:"#1e3a8a",fontWeight:600}}>■ Current</span>
+                <span style={{color:"#15803d",fontWeight:600}}>■ Answered</span>
+                <span style={{color:"#d97706",fontWeight:600}}>■ Flagged</span>
+                <span style={{color:"#9ca3af"}}>□ Unanswered</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Results ────────────────────────────────────────────────────────────────
+  function Results({result,onRetry,onHome}){
+    const {correct,total,answers,questions}=result;
+    const pct=(correct/total)*100,passed=pct>=55;
+    const [showWrong,setShowWrong]=useState(false);
+
+    const ds={};
+    questions.forEach((q,i)=>{
+      if(!ds[q.theme]) ds[q.theme]={c:0,t:0};
+      ds[q.theme].t++;
+      if(answers[i]===q.correct) ds[q.theme].c++;
+    });
+    const wrong=questions.map((q,i)=>({q,i,yours:answers[i]})).filter(x=>x.yours!==x.q.correct);
+
+    return(
+      <div style={{maxWidth:700,margin:"0 auto",padding:"44px 20px"}}>
+        <div style={{background:"#fff",borderRadius:16,border:"1px solid #e2ddd6",padding:"36px 40px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",marginBottom:14,textAlign:"center"}}>
+          <div style={{fontSize:52,marginBottom:12}}>{passed?"🎉":"📊"}</div>
+          <h2 style={{fontFamily:"'Source Serif 4',serif",fontSize:"clamp(1.6rem,4vw,2.4rem)",color:"#111827",margin:"0 0 6px"}}>{passed?"Examination Passed":"Examination Complete"}</h2>
+          <p style={{color:"#6b7280",fontSize:15,margin:"0 0 28px"}}>{passed?"Congratulations — you met the 55% passing threshold.":"You need 55% to pass. Review the domain breakdown below."}</p>
+          <div style={{display:"inline-flex",alignItems:"center",gap:24,background:passed?"#f0fdf4":"#fef2f2",border:`2px solid ${passed?"#86efac":"#fca5a5"}`,borderRadius:14,padding:"20px 36px"}}>
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:48,fontWeight:600,color:passed?"#15803d":"#dc2626",lineHeight:1}}>{pct.toFixed(1)}%</div>
+              <div style={{color:"#6b7280",fontSize:13,marginTop:5}}>{correct} of {total} correct</div>
+            </div>
+            <div style={{width:1,height:52,background:passed?"#86efac":"#fca5a5"}}/>
+            <div>
+              <div style={{fontWeight:800,fontSize:20,color:passed?"#15803d":"#dc2626"}}>{passed?"PASS":"FAIL"}</div>
+              <div style={{color:"#6b7280",fontSize:12,marginTop:3}}>Threshold: 55%</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2ddd6",padding:"24px 28px",marginBottom:12,boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
+          <h3 style={{fontFamily:"'Source Serif 4',serif",fontSize:18,color:"#111827",margin:"0 0 18px"}}>Theme Breakdown</h3>
+          {Object.entries(ds).map(([theme,stat])=>{
+            const dp=(stat.c/stat.t)*100;
+            return(
+              <div key={theme} style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+                <Tag theme={theme}/>
+                <div style={{flex:1,height:10,background:"#f0ece4",borderRadius:5,overflow:"hidden"}}>
+                  <div style={{width:`${dp}%`,height:"100%",background:TC[theme],borderRadius:5}}/>
+                </div>
+                <span style={{fontWeight:700,fontSize:13,color:"#374151",minWidth:42,textAlign:"right"}}>{dp.toFixed(0)}%</span>
+                <span style={{color:"#9ca3af",fontSize:12,minWidth:36}}>{stat.c}/{stat.t}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <button onClick={()=>setShowWrong(s=>!s)} style={{width:"100%",background:"#fff",border:"1px solid #e2ddd6",borderRadius:10,padding:"13px 20px",color:"#374151",fontSize:14,fontWeight:600,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+          <span>Review Incorrect Answers ({wrong.length})</span>
+          <span style={{color:"#9ca3af"}}>{showWrong?"▲":"▼"}</span>
+        </button>
+
+        {showWrong&&(
+          <div style={{display:"grid",gap:10,marginBottom:14}}>
+            {wrong.map(({q,i,yours})=>(
+              <div key={i} style={{background:"#fff",border:"1px solid #fca5a5",borderRadius:10,padding:"16px 18px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                <div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:10}}>
+                  <Tag theme={q.theme}/>
+                  <p style={{color:"#111827",fontSize:13,margin:0,lineHeight:1.6,fontWeight:500}}>{q.question}</p>
+                </div>
+                <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                  <span style={{fontSize:12,padding:"4px 10px",borderRadius:6,background:"#fee2e2",color:"#dc2626",border:"1px solid #fca5a5",fontWeight:500}}>✗ {yours!==undefined?q.options[yours]:"Not answered"}</span>
+                  <span style={{fontSize:12,padding:"4px 10px",borderRadius:6,background:"#dcfce7",color:"#15803d",border:"1px solid #86efac",fontWeight:500}}>✓ {q.options[q.correct]}</span>
+                </div>
+                <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"3px solid #d97706",borderRadius:"0 8px 8px 0",padding:"9px 13px"}}>
+                  <p style={{color:"#78350f",fontSize:12,margin:0}}>💡 {q.explanation}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <button onClick={onRetry} style={{background:"#1e3a8a",border:"none",borderRadius:10,padding:"15px",color:"white",fontSize:15,fontWeight:700,transition:"background 0.15s"}}
+            onMouseOver={e=>e.currentTarget.style.background="#1e40af"}
+            onMouseOut={e=>e.currentTarget.style.background="#1e3a8a"}>Retake Exam</button>
+          <button onClick={onHome} style={{background:"#f9f7f4",border:"1px solid #e2ddd6",borderRadius:10,padding:"15px",color:"#374151",fontSize:15,fontWeight:600}}>← Back to Home</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── App ────────────────────────────────────────────────────────────────────
+  function App(){
+    const [screen,setScreen]=useState("home");
+    const [result,setResult]=useState(null);
+    const [lastResult,setLastResult]=useState(null);
+
+    function handleFinish(r){
+      const pct=(r.correct/r.total)*100;
+      setLastResult({...r,pct,passed:pct>=55});
+      setResult(r);
+      setScreen("results");
+    }
+
+    return(
+      <div style={{minHeight:"100vh",background:"#f5f3ef"}}>
+        <Nav screen={screen} setScreen={setScreen}/>
+        {screen==="home"    && <Home onStart={()=>setScreen("exam")} onStudy={()=>setScreen("study")} onReview={()=>setScreen("review")} lastResult={lastResult}/>}
+        {screen==="study"   && <Study/>}
+        {screen==="review"  && <Review/>}
+        {screen==="exam"    && <Exam onFinish={handleFinish}/>}
+        {screen==="results" && result && <Results result={result} onRetry={()=>setScreen("exam")} onHome={()=>setScreen("home")}/>}
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
